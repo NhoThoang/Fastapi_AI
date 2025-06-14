@@ -5,7 +5,6 @@ from app.api.v1 import routes_product, routes_create_account, routes_login
 
 app = FastAPI(title="My FastAPI App")
 app.include_router(routes_login.router, prefix="/api/v1", tags=["Login"])
-# Đăng ký các route
 app.include_router(routes_create_account.router, prefix="/api/v1", tags=["Create Account"])
 app.include_router(routes_product.router, prefix="/api/v1", tags=["Product"])
 

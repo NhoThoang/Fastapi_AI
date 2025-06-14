@@ -17,8 +17,8 @@ class Config:
     ACCESS_SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
     REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY", "your-default-refresh-secret-key")
     ALGORITHM = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE", 86400))
-    REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE", 31536000))  # 1 year
+    ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("ACCESS_TOKEN_EXPIRE", 86400))
+    REFRESH_TOKEN_EXPIRE_SECONDS = int(os.getenv("REFRESH_TOKEN_EXPIRE", 31536000))  # 1 year
     SECIRE_HTTPS = os.getenv("SECIRE_HTTPS", "True").lower() in ("true", "1", "t")
     EXPIRATION_MAX_AGE = int(os.getenv("EXPIRATION_MAX_AGE", 600000))  # 10 days in seconds
     SAMESITE = os.getenv("SAMESITE", "Lax")  # Default to Lax if not set

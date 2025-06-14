@@ -6,17 +6,15 @@ import base64
 import urllib.parse
 import secrets
 from app.core.config import Config
-# from fastapi import HTTPException, status
 
-# Băm mật khẩu
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # SECRET_KEY nên đặt trong .env
 SECRET_KEY = Config.ACCESS_SECRET_KEY
 REFRESH_SECRET_KEY = Config.REFRESH_SECRET_KEY
 ALGORITHM = Config.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = Config.ACCESS_TOKEN_EXPIRE_MINUTES 
-REFRESH_TOKEN_EXPIRE_MINUTES = Config.REFRESH_TOKEN_EXPIRE_MINUTES
+ACCESS_TOKEN_EXPIRE_SECONDS = Config.ACCESS_TOKEN_EXPIRE_SECONDS 
+REFRESH_TOKEN_EXPIRE_SECONDS = Config.REFRESH_TOKEN_EXPIRE_SECONDS
 
 
 
@@ -28,8 +26,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    expire = datetime.now() + (expires_delta or timedelta(seconds=ACCESS_TOKEN_EXPIRE_SECONDS))
+    to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def decode_access_token(token: str) -> Optional[dict]:
@@ -40,8 +38,8 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire})
+    expire = datetime.now() + (expires_delta or timedelta(seconds=ACCESS_TOKEN_EXPIRE_SECONDS))
+    to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 def decode_refresh_token(token: str) -> Optional[dict]:
     try:

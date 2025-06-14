@@ -124,7 +124,8 @@ async def login(
             user_agent = get_user_agent(request=request),
             ip_address = get_client_ip(request=request),
         )
-        await update_refresh_token(session=session, username=user.username, refresh_token=refresh_token)
+        if first_login:
+            await update_refresh_token(session=session, username=user.username, refresh_token=refresh_token)
     if first_login or trusted_device:
         set_auth_cookies(
             response=response,
@@ -137,7 +138,7 @@ async def login(
     else:
         short_access_token = create_access_token(
             data={"sub": user.username},
-            expires_delta=timedelta(minutes=10)
+            expires_delta=timedelta(minutes=1)
         )
         set_short_auth_cookies(
             response=response,
@@ -164,12 +165,10 @@ async def update_trusted_device(
     if not username or not device_id or not access_token:
         raise HTTPException(status_code=400, detail="Username or device ID not found in cookies")
     username_decode_access_token = decode_access_token(token=access_token)
-    print(f"username_decode_access_token: {username_decode_access_token}")
     if not username_decode_access_token or username_decode_access_token.get("sub") != account.username:
         raise HTTPException(status_code=401, detail="Invalid access token")
     await update_trusted_devices(session=session, username=username, device_id=device_id, is_trusted=True)
-    refresh_token= create_refresh_token(data={"sub": username})
-    await update_refresh_token(session=session, username=username, refresh_token=refresh_token)
+    refresh_token= await get_refresh_token(session=session, username=username)
     access_token = create_access_token(data={"sub": username})
     set_auth_cookies(
         response=response,

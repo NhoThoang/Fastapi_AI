@@ -6,7 +6,7 @@ from app.db.session import get_db
 from fastapi import status
 router = APIRouter()
 
-@router.post("/products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+@router.post("/upload_products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 async def create_product(product: ProductBase, session: AsyncSession = Depends(get_db)):
     return await crud_product.create_product(session, product)
 
