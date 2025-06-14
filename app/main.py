@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 # from app.api.v1 import routes_user, routes_product
 from app.api.v1 import routes_product, routes_create_account, routes_login
+# import logging
+
+# logging.getLogger("uvicorn.access").disabled = True
 
 
 app = FastAPI(title="My FastAPI App")
