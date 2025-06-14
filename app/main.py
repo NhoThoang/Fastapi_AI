@@ -1,0 +1,27 @@
+from fastapi import FastAPI
+# from app.api.v1 import routes_user, routes_product
+from app.api.v1 import routes_product, routes_create_account, routes_login
+
+
+app = FastAPI(title="My FastAPI App")
+app.include_router(routes_login.router, prefix="/api/v1", tags=["Login"])
+# Đăng ký các route
+app.include_router(routes_create_account.router, prefix="/api/v1", tags=["Create Account"])
+app.include_router(routes_product.router, prefix="/api/v1", tags=["Product"])
+
+
+# if __name__ == "__main__":
+#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+
+
+# from fastapi import FastAPI
+
+# app = FastAPI()
+
+# Import and include routers here
+# from app.api.v1.routes_user import router as user_router
+# from app.api.v1.routes_auth import router as auth_router
+# app.include_router(user_router, prefix="/api/v1/users")
+# app.include_router(auth_router, prefix="/api/v1/auth")
