@@ -6,6 +6,7 @@ from app.crud import product as crud_product
 from app.db.session import get_db
 from fastapi import status
 import os, shutil
+from fastapi.responses import JSONResponse
 router = APIRouter()
 
 @router.post("/upload_products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
@@ -54,6 +55,15 @@ async def get_all_products(
     request: Request,
     session: AsyncSession = Depends(get_db)):
     return await crud_product.get_products(session)
+@router.get("/test_static/", status_code=status.HTTP_200_OK)
+async def test_static_response():
+    return JSONResponse(
+        status_code=200,
+        content={
+            "status": "success",
+            "message": "This is a static response",
+        }
+    )
 # @router.get("/product_image/{barcode}", response_model=JsonOut, status_code=status.HTTP_200_OK)
 # async def get_product_image(
 #     request: Request,
