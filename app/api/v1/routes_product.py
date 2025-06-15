@@ -64,6 +64,7 @@ async def test_static_response():
             "message": "This is a static response",
         }
     )
+
 # @router.get("/product_image/{barcode}", response_model=JsonOut, status_code=status.HTTP_200_OK)
 # async def get_product_image(
 #     request: Request,

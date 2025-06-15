@@ -1,0 +1,103 @@
+from minio import Minio
+
+client = Minio("localhost:9000", access_key="admin", secret_key="strongpassword123", secure=False)
+
+# Tạo bucket và upload
+if not client.bucket_exists("uploads"):
+    client.make_bucket("uploads")
+client.fput_object("uploads", "user1/file.jpg", "/path/to/file.jpg")
+
+ Thử nghiệm hiệu suất
+Bạn có thể test tốc độ upload/download bằng:
+mc alias set local http://localhost:9000 admin admin123
+mc support perf local
+
+
+5. Theo dõi và giám sát hiệu năng
+MinIO cung cấp Prometheus metrics và web dashboard:
+
+Truy cập: http://localhost:9001
+
+Hoặc dùng Prometheus + Grafana để xem IOPS, latency, throughput…
+
+
+upstream minio_cluster {
+    server node1:9000;
+    server node2:9000;
+    server node3:9000;
+}
+
+server {
+    listen 9000;
+    location / {
+        proxy_pass http://minio_cluster;
+    }
+}
+
+
+
+ Phân tách ổ đĩa nếu có nhiều ổ vật lý
+MinIO hỗ trợ distributed mode – tức là bạn có thể chia nhỏ dữ liệu ra nhiều ổ hoặc node để tăng throughput và redundancy.
+
+bash
+Copy
+Edit
+minio server /mnt/disk1 /mnt/disk2 /mnt/disk3 /mnt/disk4
+
+
+b. Tăng giới hạn hệ điều hành
+MinIO là I/O-heavy app. Tăng số file descriptor và network connection:
+
+File: /etc/security/limits.conf
+bash
+Copy
+Edit
+* soft nofile 65536
+* hard nofile 65536
+
+
+File: /etc/sysctl.conf
+bash
+Copy
+Edit
+fs.file-max = 2097152
+net.core.somaxconn = 4096
+net.core.netdev_max_backlog = 10000
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_max_syn_backlog = 4096
+
+
+c. Chạy MinIO nhiều instance (distributed mode)
+Nếu có nhiều máy:
+
+bash
+Copy
+Edit
+minio server http://node{1...4}/mnt/data
+Nếu chỉ 1 máy nhưng muốn chia thành nhiều instance:
+
+bash
+Copy
+Edit
+minio server http://127.0.0.1:9000/mnt/disk1 \
+              http://127.0.0.1:9001/mnt/disk2 \
+              http://127.0.0.1:9002/mnt/disk3 \
+              http://127.0.0.1:9003/mnt/disk4
+
+
+✅ 2. Cấu hình Docker (nếu bạn dùng Docker)
+yaml
+Copy
+Edit
+ulimits:
+  nofile:
+    soft: 65536
+    hard: 65536
+Đảm bảo mount volume có tốc độ tốt:
+
+bash
+Copy
+Edit
+-v /mnt/data:/data \
+--memory="4g" --cpus="2.0"
