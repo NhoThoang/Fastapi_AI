@@ -7,9 +7,14 @@ log:
 http:
   addr: :5000
   headers:
-    Access-Control-Allow-Origin: ['*']
-    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS']
-    Access-Control-Allow-Headers: ['Authorization']
+    Access-Control-Allow-Origin:
+      - "*"
+    Access-Control-Allow-Methods:
+      - HEAD
+      - GET
+      - OPTIONS
+    Access-Control-Allow-Headers:
+      - Authorization
   drainTimeout: 60s
   relativeurls: false
 

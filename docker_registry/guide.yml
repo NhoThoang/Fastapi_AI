@@ -1,0 +1,21 @@
+http://host:port/v2/_catalog
+
+| Hành động       | Lệnh                                            |
+| --------------- | ----------------------------------------------- |
+| Tag image       | `docker tag local:tag host:port/name:tag`       |
+| Push image      | `docker push host:port/name:tag`                |
+| Pull image      | `docker pull host:port/name:tag`                |
+| Danh sách image | `curl http://host:port/v2/_catalog`             |
+| Danh sách tags  | `curl http://host:port/v2/image-name/tags/list` |
+| Cho HTTP        | Thêm `insecure-registries` vào `daemon.json`    |
+
+create cert 
+mkdir -p nginx_registry_ssl/certs
+openssl req -newkey rsa:2048 -nodes -keyout nginx_registry_ssl/certs/registry.key -x509 -days 365 -out nginx_registry_ssl/certs/registry.crt -subj "/CN=registry.local"
+nginx_registry_ssl/
+├── docker-compose.yml
+├── certs/
+│   ├── registry.crt
+│   └── registry.key
+├── nginx/
+│   └── nginx.conf
