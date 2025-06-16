@@ -1,0 +1,17 @@
+services:
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Origin: ['*']
+      REGISTRY_HTTP_HEADERS_Access-Control-Allow-Methods: ['GET', 'OPTIONS', 'HEAD']
+    volumes:
+      - ./config.yml:/etc/docker/registry/config.yml
+      - registry_data:/var/lib/registry
+    restart: always
+
+volumes:
+  registry_data:

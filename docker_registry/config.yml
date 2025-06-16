@@ -1,0 +1,28 @@
+version: 0.1
+log:
+  level: info
+  fields:
+    service: registry
+
+http:
+  addr: :5000
+  headers:
+    Access-Control-Allow-Origin: ['*']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS']
+    Access-Control-Allow-Headers: ['Authorization']
+  drainTimeout: 60s
+  relativeurls: false
+
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
+  cache:
+    blobdescriptor: inmemory
+
+health:
+  storagedriver:
+    enabled: true
+    interval: 10s
+    threshold: 3
