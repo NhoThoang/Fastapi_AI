@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from app.db.base import Base
+from app.db.mysql.base import Base
 from sqlalchemy import CheckConstraint
 from datetime import datetime
 class Products(Base):

@@ -1,17 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_db
+from app.db.mysql.session import get_db
 from fastapi import Request
-from app.schemas.account import AccountLogin, JsonOut, Accountusername
+from app.schemas.mysql.account import AccountLogin, JsonOut, Accountusername
 from app.core.security import *
-from app.crud.account import *
-router = APIRouter()
+from app.crud.mysql.account import *
 from datetime import timedelta
-from app.core.config import Config
-SECRET_HTTPS = Config.SECIRE_HTTPS
-EXPIRATION_MAX_AGE = Config.EXPIRATION_MAX_AGE
-SAMESITE = Config.SAMESITE
+from app.core.config import app_config
+router = APIRouter()
+SECRET_HTTPS = app_config.secure_https
+EXPIRATION_MAX_AGE = app_config.expiration_max_age
+SAMESITE = app_config.samesite
 # def get_client_ip(request: Request) -> str:
 #     return request.headers.get('X-Real-IP') or request.headers.get('X-Forwarded-For', request.remote_addr) or '0.0.0.0'
 def get_client_ip(request: Request) -> str:

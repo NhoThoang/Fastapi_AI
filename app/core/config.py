@@ -1,37 +1,65 @@
-import os
-from dotenv import load_dotenv
+from pydantic_settings import BaseSettings
+from pydantic import Field
+from typing import Literal
 
-load_dotenv() 
-
-class ConfigDB:
+class SettingsBase(BaseSettings):
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+        # extra = "allow"
+class ConfigDB(SettingsBase):
     """Configuration class for database settings."""
-    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
-    SQLALCHEMY_POOL_SIZE = int(os.getenv("SQLALCHEMY_POOL_SIZE", 5))
-    SQLALCHEMY_MAX_OVERFLOW = int(os.getenv("SQLALCHEMY_MAX_OVERFLOW", 10))
-    SQLALCHEMY_POOL_RECYCLE = int(os.getenv("SQLALCHEMY_POOL_RECYCLE", 1800))
-    SQLALCHEMY_POOL_TIMEOUT = int(os.getenv("SQLALCHEMY_POOL_TIMEOUT", 30))
-    SQLALCHEMY_ECHO = os.getenv("SQLALCHEMY_ECHO", "False").lower() in ("true", "1", "t")
-    SQLALCHEMY_TRACK_MODIFICATIONS = os.getenv("SQLALCHEMY_TRACK_MODIFICATIONS", "False").lower() in ("true", "1", "t")
-class Config:
-    """Configuration class for application settings."""
-    ACCESS_SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
-    REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY", "your-default-refresh-secret-key")
-    ALGORITHM = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("ACCESS_TOKEN_EXPIRE", 86400))
-    REFRESH_TOKEN_EXPIRE_SECONDS = int(os.getenv("REFRESH_TOKEN_EXPIRE", 31536000))  # 1 year
-    SECIRE_HTTPS = os.getenv("SECIRE_HTTPS", "True").lower() in ("true", "1", "t")
-    EXPIRATION_MAX_AGE = int(os.getenv("EXPIRATION_MAX_AGE", 600000))  # 10 days in seconds
-    SAMESITE = os.getenv("SAMESITE", "Lax")  # Default to Lax if not set
-class ConfigMinio:
-    """Configuration class for Minio settings."""
-    MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-    MINIO_ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "admin")
-    MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "admin123")
-    SECIRE_HTTPS = os.getenv("MINIO_SECURE", "False").lower() in ("true", "1", "t")  # Default to False if not set
-    MINIO_BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME", "mybucket")  # Default bucket name
-class ConfigRedis:
-    """Configuration class for Redis settings."""
-    REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-    REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-    REDIS_DB = int(os.getenv("REDIS_DB", 0))
-    REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)  # Optional password, None if not set
+    sqlalchemy_database_uri: str = Field(..., env="SQLALCHEMY_DATABASE_URI")
+    sqlalchemy_pool_size: int = Field(5, env="SQLALCHEMY_POOL_SIZE")
+    sqlalchemy_max_overflow: int = Field(10, env="SQLALCHEMY_MAX_OVERFLOW")
+    sqlalchemy_pool_recycle: int = Field(1800, env="SQLALCHEMY_POOL_RECYCLE")
+    sqlalchemy_pool_timeout: int = Field(30, env="SQLALCHEMY_POOL_TIMEOUT")
+    sqlalchemy_echo: bool = Field(False, env="SQLALCHEMY_ECHO")
+    sqlalchemy_track_modifications: bool = Field(False, env="SQLALCHEMY_TRACK_MODIFICATIONS")
+
+class MongoSettings(SettingsBase):
+    mongo_uri: str = Field(..., env="MONGO_URI")
+    db_name: str = Field(..., env="DB_NAME")
+    max_pool_size: int = Field(100, env="MONGO_MAX_POOL_SIZE")
+    min_pool_size: int = Field(10, env="MONGO_MIN_POOL_SIZE")
+    connect_timeout_ms: int = Field(30000, env="MONGO_CONNECT_TIMEOUT_MS")
+    server_selection_timeout_ms: int = Field(30000, env="MONGO_SERVER_SELECTION_TIMEOUT_MS")
+    socket_timeout_ms: int = Field(30000, env="MONGO_SOCKET_TIMEOUT_MS")
+    wait_queue_timeout_ms: int = Field(30000, env="MONGO_WAIT_QUEUE_TIMEOUT_MS")
+    retry_writes: bool = Field(True, env="MONGO_RETRY_WRITES")
+    write_concern: Literal["majority", "1", "0"] = Field("majority", env="MONGO_WRITE_CONCERN")
+    journal: bool = Field(True, env="MONGO_JOURNAL")
+    tz_aware: bool = Field(True, env="MONGO_TZ_AWARE")
+
+# Khởi tạo 1 biến toàn cục
+
+class AppConfig(SettingsBase):
+    access_secret_key: str = Field("your-default-secret-key", env="SECRET_KEY")
+    refresh_secret_key: str = Field("your-default-refresh-secret-key", env="REFRESH_SECRET_KEY")
+    algorithm: str = Field("HS256", env="ALGORITHM")
+    access_token_expire_seconds: int = Field(86400, env="ACCESS_TOKEN_EXPIRE")
+    refresh_token_expire_seconds: int = Field(31536000, env="REFRESH_TOKEN_EXPIRE")
+    secure_https: bool = Field(True, env="SECIRE_HTTPS")
+    expiration_max_age: int = Field(600000, env="EXPIRATION_MAX_AGE")
+    samesite: str = Field("Lax", env="SAMESITE")
+
+class ConfigMinio(SettingsBase):
+    minio_endpoint: str = Field("localhost:9000", env="MINIO_ENDPOINT")
+    minio_access_key: str = Field("admin", env="MINIO_ROOT_USER")
+    minio_secret_key: str = Field("admin123", env="MINIO_ROOT_PASSWORD")
+    secure_https: bool = Field(False, env="MINIO_SECURE")
+    minio_bucket_name: str = Field("mybucket", env="MINIO_BUCKET_NAME")
+
+
+class ConfigRedis(SettingsBase):
+    redis_host: str = Field("localhost", env="REDIS_HOST")
+    redis_port: int = Field(6379, env="REDIS_PORT")
+    redis_db: int = Field(0, env="REDIS_DB")
+    redis_password: str | None = Field(None, env="REDIS_PASSWORD")
+
+config_db = ConfigDB()
+mongo_settings = MongoSettings()
+app_config = AppConfig()
+minio_config = ConfigMinio()
+redis_config = ConfigRedis()
+

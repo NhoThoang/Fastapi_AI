@@ -1,0 +1,67 @@
+.
+├── docker-compose.nginx.yml
+└── nginx/
+    ├── nginx.conf
+    └── cache/
+mkdir -p nginx/cache
+docker network create backend
+
+
+
+🔧 Cài đặt
+1. Tạo mạng Docker chung:
+bash
+Copy
+Edit
+docker network create nginx-proxy
+2. Docker Compose cho nginx-proxy + letsencrypt-companion
+yaml
+Copy
+Edit
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+      - ./nginx.conf:/etc/nginx/conf.d/my_custom.conf:ro
+    networks:
+      - nginx-proxy
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: nginx-letsencrypt
+    depends_on:
+      - nginx-proxy
+    environment:
+      NGINX_PROXY_CONTAINER: nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/etc/nginx/certs
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+    networks:
+      - nginx-proxy
+3. Dịch vụ FastAPI (ví dụ 1 server):
+yaml
+Copy
+Edit
+  fastapi-app:
+    image: your_fastapi_image
+    environment:
+      - VIRTUAL_HOST=app.example.com
+      - LETSENCRYPT_HOST=app.example.com
+      - LETSENCRYPT_EMAIL=you@example.com
+    expose:
+      - 8000
+    networks:
+      - nginx-proxy
+⚠️ Trỏ A record tên miền app.example.com về IP server.

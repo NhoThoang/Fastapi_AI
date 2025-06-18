@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from datetime import datetime
-from app.db.base import Base
+from app.db.mysql.base import Base
 class UserDevice(Base):
     __tablename__ = 'user_device'
     id = Column(Integer, primary_key=True, autoincrement=True)

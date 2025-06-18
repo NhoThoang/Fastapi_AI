@@ -1,10 +1,8 @@
 from minio import Minio
-from app.core.config import ConfigMinio # Giả sử bạn đọc .env qua settings
-import os
-
+from app.core.config import minio_config
 minio_client = Minio(
-    ConfigMinio.MINIO_ENDPOINT,
-    access_key=ConfigMinio.MINIO_ACCESS_KEY,
-    secret_key=ConfigMinio.MINIO_SECRET_KEY,
-    secure= ConfigMinio.SECIRE_HTTPS,  # True nếu sử dụng HTTPS
+    minio_config.minio_endpoint,
+    access_key=minio_config.minio_access_key,
+    secret_key=minio_config.minio_secret_key,
+    secure= minio_config.secure_https,
 )

@@ -2,9 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # from sqlalchemy.future import select, exists
 from sqlalchemy import select, exists, update, values
 from fastapi import HTTPException, status
-from app.models.accounts import Account
-from app.models.user_devices import UserDevice
-from app.schemas.account import AccountCreate, AccountBase, Optional
+from app.models.mysql.accounts import Account
+from app.models.mysql.user_devices import UserDevice
+from app.schemas.mysql.account import AccountCreate, AccountBase, Optional
 from app.core.security import get_password_hash, verify_password
 from datetime import datetime
 

@@ -1,16 +1,21 @@
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.product import  ProductOut, ProductBase
-from app.schemas.account import JsonOut
-from app.crud import product as crud_product
-from app.db.session import get_db
+from app.schemas.mysql.product import  ProductOut, ProductBase
+from app.schemas.mysql.account import JsonOut
+from app.crud.mysql import product as crud_product
+from app.db.mysql.session import get_db
 from fastapi import status
 import os, shutil
 from fastapi.responses import JSONResponse
 from app.core.minio_client import minio_client
 from uuid import uuid4
 import io
-from app.core.config import ConfigMinio
+from app.core.security import decode_access_token
+from app.core.config import minio_config
+from app.crud.mongo.detail_product import get_product_detail, create_product_detail
+from app.schemas.mongo.detail_product import ProductDetailIn, ProductDetailOut
+
+
 router = APIRouter()
 
 @router.post("/upload_products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
@@ -61,6 +66,13 @@ async def upload_product_image(
     session: AsyncSession = Depends(get_db)
 ):
     username = request.cookies.get("username") or "guest"
+    access_token = request.cookies.get("access_token")
+    if not username or not access_token:
+        raise HTTPException(status_code=400, detail="Username or access token not found in cookies")
+    # decode access_token = minio_client.decode_access_token(token=access_token) 
+    decoded_token = decode_access_token(access_token)
+    if not decoded_token or decoded_token.get("sub") != username:
+        raise HTTPException(status_code=401, detail="Invalid access token")
     bucket_name = "user-uploads"
 
     # 📁 Tạo bucket nếu chưa tồn tại
@@ -86,7 +98,7 @@ async def upload_product_image(
     )
 
     # image_url = f"http://{minio_client._endpoint}/user-uploads/{object_path}"
-    image_url = f"http://{ConfigMinio.MINIO_ENDPOINT}/{bucket_name}/{object_path}"
+    image_url = f"http://{minio_config.minio_endpoint}/{bucket_name}/{object_path}"
 
     return {
         "status": "Image uploaded successfully",
@@ -107,7 +119,17 @@ async def test_static_response():
             "message": "This is a static response",
         }
     )
+@router.post("/product_detail", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
+async def product_detail(data: ProductDetailIn):
+    detail = await create_product_detail(data)
+    return {"status": "success", "message": "Product detail created", "id": str(detail.id)}
 
+@router.get("/{product_id}")
+async def read_product_detail(product_id: int):
+    detail = await get_product_detail(product_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Product detail not found")
+    return detail
 # @router.get("/product_image/{barcode}", response_model=JsonOut, status_code=status.HTTP_200_OK)
 # async def get_product_image(
 #     request: Request,

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.models.products import Products
-from app.schemas.product import ProductBase
+from app.models.mysql.products import Products
+from app.schemas.mysql.product import ProductBase
 from fastapi import HTTPException, status
 
 async def create_product(session: AsyncSession, product: ProductBase):

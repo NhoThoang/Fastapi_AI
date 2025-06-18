@@ -5,17 +5,16 @@ from typing import Optional
 import base64
 import urllib.parse
 import secrets
-from app.core.config import Config
+from app.core.config import app_config
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # SECRET_KEY nên đặt trong .env
-SECRET_KEY = Config.ACCESS_SECRET_KEY
-REFRESH_SECRET_KEY = Config.REFRESH_SECRET_KEY
-ALGORITHM = Config.ALGORITHM
-ACCESS_TOKEN_EXPIRE_SECONDS = Config.ACCESS_TOKEN_EXPIRE_SECONDS 
-REFRESH_TOKEN_EXPIRE_SECONDS = Config.REFRESH_TOKEN_EXPIRE_SECONDS
-
+SECRET_KEY = app_config.access_secret_key
+REFRESH_SECRET_KEY = app_config.refresh_secret_key
+ALGORITHM = app_config.algorithm
+ACCESS_TOKEN_EXPIRE_SECONDS = app_config.access_token_expire_seconds 
+REFRESH_TOKEN_EXPIRE_SECONDS = app_config.refresh_token_expire_seconds
 
 
 def get_password_hash(password: str) -> str:

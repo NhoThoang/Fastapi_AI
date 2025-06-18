@@ -19,3 +19,11 @@ nginx_registry_ssl/
 │   └── registry.key
 ├── nginx/
 │   └── nginx.conf
+
+🧪 5. Trên client
+Thêm vào máy client:
+
+mkdir -p /etc/docker/certs.d/registry.local
+scp registry.crt client:/etc/docker/certs.d/registry.local/ca.crt
+Nếu dùng IP, thư mục sẽ là:
+/etc/docker/certs.d/192.168.5.11:443/ca.crt
