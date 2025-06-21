@@ -45,6 +45,7 @@ class AppConfig(SettingsBase):
 
 class ConfigMinio(SettingsBase):
     minio_endpoint: str = Field("localhost:9000", env="MINIO_ENDPOINT")
+    minio_ip_address: str = Field("localhost", env="MINIO_IP_ADDRESS")
     minio_access_key: str = Field("admin", env="MINIO_ROOT_USER")
     minio_secret_key: str = Field("admin123", env="MINIO_ROOT_PASSWORD")
     secure_https: bool = Field(False, env="MINIO_SECURE")

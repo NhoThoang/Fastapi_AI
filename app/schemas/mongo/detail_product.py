@@ -2,10 +2,10 @@ from typing import List
 from datetime import datetime
 from pydantic import BaseModel, Field
 from .product_common import DescriptionBlock, SEO
+from app.schemas.mysql.product import ProductBase
 
 class ProductDetailIn(BaseModel):
     barcode: str = Field(..., pattern=r'^\d+$')
-    images: List[str]
     description_blocks: List[DescriptionBlock]
     seo: SEO
     created_at: datetime = Field(default_factory=datetime.utcnow)

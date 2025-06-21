@@ -101,3 +101,33 @@ Copy
 Edit
 -v /mnt/data:/data \
 --memory="4g" --cpus="2.0"
+
+
+i#nstall mc 
+curl https://dl.min.io/client/mc/release/linux-amd64/mc -o mc
+chmod +x mc
+sudo mv mc /usr/local/bin/
+
+#set permission package to executable
+# Kết nối tới MinIO
+mc alias set local http://192.168.5.11:9000 minioadmin minioadmin
+
+# Cho phép public download
+mc anonymous set download local/product-images
+
+# Kiểm tra quyền hiện tại
+mc anonymous get local/product-images
+# write permission
+mc anonymous set upload local/product-images
+# read and write permission
+mc anonymous set public local/product-images
+# delete permission
+mc anonymous set delete local/product-images
+mc anonymous set none local/product-images
+ check
+mc ls local/product-images
+mc anonymous get local/product-images
+mc anonymous set upload local/product-images
+mc anonymous get local/product-images
+
+

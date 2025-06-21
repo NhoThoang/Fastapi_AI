@@ -1,6 +1,6 @@
 import asyncio
-from my_fastapi_app.app.db.mysql.session import async_engine
-from app.models import Account, Products
+from app.db.mysql.session import async_engine
+from app.models import Account, Products, Product_images
 from app.models.mysql import user_devices
 from app.db.mysql.base import Base
 

@@ -17,11 +17,24 @@ from app.crud.minio.upload_image import *
 from app.schemas.mongo.detail_product import *
 from app.models.mongo.product_detail import ProductDetail
 import json
-from app.crud.mysql.product import insert_image_url_image_hash, Image_hash
 
 router = APIRouter()
+from utils.hash import compute_md5  # hàm này đọc file và tính md5
+from crud_product import get_image_by_hash, insert_image_hash
 
-async def get_current_username(request: Request) -> str:
+@router.post("/upload_products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    request: Request,
+    product_json: str = Form(...),
+    images: List[UploadFile] = File(...),
+    session: AsyncSession = Depends(get_db),
+):
+    try:
+        product_data = json.loads(product_json)
+        product = ProductDetailIn(**product_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="Invalid product JSON")
+
     username = request.cookies.get("username") or "guest"
     access_token = request.cookies.get("access_token")
     if not username or not access_token:
@@ -30,61 +43,64 @@ async def get_current_username(request: Request) -> str:
     decoded_token = decode_access_token(access_token)
     if not decoded_token or decoded_token.get("sub") != username:
         raise HTTPException(status_code=401, detail="Invalid access token")
-    
-    return username
 
-@router.post("/upload_products/mysql_detail_create", response_model=ProductMessageOut, status_code=status.HTTP_201_CREATED)
-async def create_product(
-    product: ProductBase = Body(...),
-    session: AsyncSession = Depends(get_db),
-    username: str = Depends(get_current_username)):
-    mysql_detail = await crud_product.create_product(session, product)
-    return {
-        "status": "success",
-        "message": "Product detail created mysql.",
-        "id": str(mysql_detail.id)
-    }
-
-@router.post("/upload_products/mongo_detail_create", response_model=ProductMessageOut, status_code=status.HTTP_201_CREATED)
-async def create_product(
-    product_json: ProductDetailIn = Body(...),
-    username: str = Depends(get_current_username)):
-    mongo_detail = await create_product_detail(product_json)
-
-    return {
-        "status": "success",
-        "message": "Product detail created mongo.",
-        "id": str(mongo_detail.id)
-    }
-
-@router.post("/upload_products/upload_images", response_model=ProductMessageOut, status_code=status.HTTP_201_CREATED)
-async def create_product(
-    barcode: str = Form(...),
-    images: List[UploadFile] = File(...),
-    session: AsyncSession = Depends(get_db),
-    username: str = Depends(get_current_username)):
     image_urls = []
     image_hashes = []
+
     for image in images:
-        image_url, image_hash = await upload_image_to_minio(session=session, barcode=barcode, username=username, image=image)
+        # ✅ Tính hash trước khi upload
+        file_bytes = await image.read()
+        image_hash = hashlib.md5(file_bytes).hexdigest()
+        image.file.seek(0)
+
+        # ✅ Kiểm tra hash đã tồn tại chưa
+        existing = await get_image_by_hash(session, image_hash)
+        if existing:
+            image_url = existing.image_url
+        else:
+            # ✅ Upload nếu chưa tồn tại
+            file_stream = io.BytesIO(file_bytes)
+            file_size = len(file_bytes)
+            image_filename = f"{product.barcode}_{uuid4().hex}.{image.filename.split('.')[-1]}"
+            object_path = f"{username}/{image_filename}"
+            minio_client.put_object(
+                "product-images",
+                object_path,
+                file_stream,
+                length=file_size,
+                content_type=image.content_type
+            )
+            image_url = f"https://{minio_config.minio_ip_address}:8080/images/{object_path}"
+            # ✅ Lưu vào DB
+            await insert_image_hash(session, barcode=product.barcode, image_hash=image_hash, image_url=image_url)
+
         image_urls.append(image_url)
         image_hashes.append(image_hash)
-    for image_hash, image_url in zip(image_hashes, image_urls):
-        image_hash_model = Image_hash(
-            barcode=barcode,
-            image_hash=image_hash,
-            image_url=image_url
-        )
-        await insert_image_url_image_hash(session, image_hash_model)
 
+    # ✅ Ghi MongoDB (full data)
+    product.images = image_urls
+    product.image_hashes = image_hashes
+    mongo_detail = await create_product_detail(product)
+
+    # ✅ Ghi MySQL (basic data)
+    product_base_data = {
+        "name_product": product.name_product,
+        "barcode": product.barcode,
+        "quantity": product.quantity,
+        "import_price": product.import_price,
+        "sell_price": product.sell_price,
+        "discount": product.discount,
+        "expiry_date": product.expiry_date,
+        "type_product": product.type_product,
+    }
+    mysql_product = ProductBase(**product_base_data)
+    mysql_detail = await crud_product.create_product(session, mysql_product)
 
     return {
         "status": "success",
-        "message": "Upload image successfully",
-        "image_urls": image_urls
+        "message": "Product detail created.",
+        "id": str(mongo_detail.id)
     }
-    # return await crud_product.create_product(session, product)
-
 
 
 @router.post("/product_detail", response_model=ProductMessageOut, status_code=status.HTTP_200_OK)

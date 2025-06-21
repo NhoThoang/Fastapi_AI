@@ -1,3 +1,14 @@
+thoang@thoang:~/python_app/Fastapi_AI/nginx_minio$ cat docker-compose.yml
+services:
+  nginx:
+    image: nginx:latest
+    container_name: nginx-image-gateway
+    ports:
+      - "8080:443"  # Truy cập qua http://localhost:8080
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+thoang@thoang:~/python_app/Fastapi_AI/nginx_minio$ cat nginx.conf
 events {}
 
 http {

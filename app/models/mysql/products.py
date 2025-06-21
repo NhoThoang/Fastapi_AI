@@ -14,3 +14,11 @@ class Products(Base):
     input_date = Column(DateTime, nullable=False, default=datetime.now)
     expiry_date = Column(DateTime, nullable=False)
     type_product = Column(String(50, collation='utf8mb4_bin'), index=True)
+class Product_images(Base):
+    __tablename__ = 'product_images'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    barcode = Column(String(50), unique=True, nullable=False)
+    image_hash = Column(String(255), index=True, nullable=False)
+    image_url = Column(String(255), nullable=False)
+    crreate_date = Column(DateTime, nullable=False, default=datetime.now)
+    is_delete = Column(Boolean, nullable=False, default=False)
