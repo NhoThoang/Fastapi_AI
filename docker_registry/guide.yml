@@ -27,3 +27,8 @@ mkdir -p /etc/docker/certs.d/registry.local
 scp registry.crt client:/etc/docker/certs.d/registry.local/ca.crt
 Nếu dùng IP, thư mục sẽ là:
 /etc/docker/certs.d/192.168.5.11:443/ca.crt
+
+
+docker pull 192.168.5.11/fastapi_v2:latest
+docker pull 192.168.5.11:5000/fastapi_v2:latest
+

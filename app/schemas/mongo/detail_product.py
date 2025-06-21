@@ -1,14 +1,25 @@
 from typing import List
-from pydantic import BaseModel
+from datetime import datetime
+from pydantic import BaseModel, Field
 from .product_common import DescriptionBlock, SEO
 
 class ProductDetailIn(BaseModel):
-    product_id: int
+    barcode: str = Field(..., pattern=r'^\d+$')
     images: List[str]
     description_blocks: List[DescriptionBlock]
     seo: SEO
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    is_deleted: bool = Field(default=False)
 
-class ProductDetailOut(BaseModel):
+ProductDetailOut = ProductDetailIn
+class ProductMessageOut(BaseModel):
     status: str
     message: str
     id: str
+
+class BarcodeIn(BaseModel):
+    barcode: str = Field(..., pattern=r'^\d+$')
+
+
+    
+# barcode: str = Field(..., pattern=r'^\d+$', min_length=6, max_length=13)

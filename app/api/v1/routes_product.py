@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request
+from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.mysql.product import  ProductOut, ProductBase
 from app.schemas.mysql.account import JsonOut
@@ -12,51 +12,25 @@ from uuid import uuid4
 import io
 from app.core.security import decode_access_token
 from app.core.config import minio_config
-from app.crud.mongo.detail_product import get_product_detail, create_product_detail
-from app.schemas.mongo.detail_product import ProductDetailIn, ProductDetailOut
+from app.crud.mongo.detail_product import *
+from app.crud.minio.upload_image import *
+from app.schemas.mongo.detail_product import *
+from app.models.mongo.product_detail import ProductDetail
 
 
 router = APIRouter()
-
 @router.post("/upload_products/", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
-async def create_product(product: ProductBase, session: AsyncSession = Depends(get_db)):
+async def create_product(product: ProductBase = Body(...), session: AsyncSession = Depends(get_db)):
     return await crud_product.create_product(session, product)
 
-
-# @router.post("/upload_product_image/", response_model=JsonOut, status_code=status.HTTP_200_OK)
-# async def upload_product_image(
-#     request: Request,
-#     barcode: str = Form(...),
-#     image: UploadFile = File(...),
-#     session: AsyncSession = Depends(get_db)
-# ):
-#     username = request.cookies.get("username")
-#     # # 🔍 Tìm sản phẩm theo barcode
-#     # result = await session.execute(select(Products).where(Products.barcode == barcode))
-#     # product = result.scalar_one_or_none()
-
-#     # if not product:
-#     #     raise HTTPException(status_code=404, detail="Product not found")
-
-#     # # 📁 Tạo thư mục nếu chưa có
-#     save_dir = f"static/{username}/product_images"
-#     os.makedirs(save_dir, exist_ok=True)
-
-#     # 📸 Lưu ảnh
-#     image_filename = f"{barcode}_{image.filename}"
-#     image_path = os.path.join(save_dir, image_filename)
-
-#     with open(image_path, "wb") as buffer:
-#         shutil.copyfileobj(image.file, buffer)
-
-#     # 📝 Cập nhật image_path vào DB
-#     # product.image_path = image_path
-#     # await session.commit()
-
-#     return {
-#         "status": "Image uploaded successfully",
-#         "message": f"/static/product_images/{image_filename}"
-#     }
+@router.post("/product_detail", response_model=ProductMessageOut, status_code=status.HTTP_200_OK)
+async def product_detail(data: ProductDetailIn = Body(...)):
+    detail = await create_product_detail(data)
+    return {
+        "status": "success",
+        "message": "Product detail created.",
+        "id": str(detail.id)
+    }
 
 @router.post("/upload_product_image/", response_model=JsonOut, status_code=status.HTTP_200_OK)
 async def upload_product_image(
@@ -73,43 +47,112 @@ async def upload_product_image(
     decoded_token = decode_access_token(access_token)
     if not decoded_token or decoded_token.get("sub") != username:
         raise HTTPException(status_code=401, detail="Invalid access token")
-    bucket_name = "user-uploads"
-
-    # 📁 Tạo bucket nếu chưa tồn tại
-    if not minio_client.bucket_exists(bucket_name):
-        minio_client.make_bucket(bucket_name)
-
-    # 📸 Tạo tên file duy nhất
-    extension = image.filename.split(".")[-1]
-    image_filename = f"{barcode}_{uuid4().hex}.{extension}"
-    object_path = f"{username}/product_images/{image_filename}"
-
-    # 📤 Upload vào MinIO
-    file_bytes = await image.read()
-    file_stream = io.BytesIO(file_bytes)
-    file_size = len(file_bytes)
-
-    minio_client.put_object(
-        bucket_name,
-        object_path,
-        file_stream,
-        length=file_size,
-        content_type=image.content_type
-    )
-
-    # image_url = f"http://{minio_client._endpoint}/user-uploads/{object_path}"
-    image_url = f"http://{minio_config.minio_endpoint}/{bucket_name}/{object_path}"
+    image_url = await upload_image_to_minio(barcode=barcode, username=username, image=image)
 
     return {
         "status": "Image uploaded successfully",
         "message": image_url
     }
 
+
+@router.post("/create_full_product/", status_code=status.HTTP_201_CREATED)
+async def create_full_product(
+    request: Request,
+    # ProductBase (MySQL) fields
+    product_id: int = Form(...),
+    name: str = Form(...),
+    barcode: str = Form(...),
+
+    # ProductDetailIn (MongoDB) fields
+    description_blocks: str = Form(...),  # JSON string, parse sau
+    seo: str = Form(...),  # JSON string
+
+    # Image
+    image: UploadFile = File(...),
+
+    # Session for MySQL
+    session: AsyncSession = Depends(get_db)
+):
+    # ✅ Check access_token
+    username = request.cookies.get("username") or "guest"
+    access_token = request.cookies.get("access_token")
+    if not username or not access_token:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+    
+    decoded_token = decode_access_token(access_token)
+    if not decoded_token or decoded_token.get("sub") != username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    # ✅ 1. Tạo sản phẩm trong MySQL
+    product_base = ProductBase(product_id=product_id, name=name, barcode=barcode)
+    product = await crud_product.create_product(session, product_base)
+
+    # ✅ 2. Ghi chi tiết sản phẩm vào MongoDB
+    import json
+    try:
+        description_blocks_list = json.loads(description_blocks)
+        seo_obj = json.loads(seo)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON in description_blocks or seo")
+
+    if await ProductDetail.find_one(ProductDetail.barcode == barcode):
+        raise HTTPException(status_code=409, detail="Product detail already exists")
+
+    detail = ProductDetail(
+        product_id=product_id,
+        barcode=barcode,
+        description_blocks=description_blocks_list,
+        seo=seo_obj
+    )
+    await detail.create()
+
+    # ✅ 3. Upload ảnh vào MinIO
+    extension = image.filename.split(".")[-1]
+    image_filename = f"{barcode}_{uuid4().hex}.{extension}"
+    object_path = f"{username}/product_images/{image_filename}"
+    bucket_name = "user-uploads"
+
+    if not minio_client.bucket_exists(bucket_name):
+        minio_client.make_bucket(bucket_name)
+
+    file_bytes = await image.read()
+    file_stream = io.BytesIO(file_bytes)
+    minio_client.put_object(
+        bucket_name=bucket_name,
+        object_name=object_path,
+        data=file_stream,
+        length=len(file_bytes),
+        content_type=image.content_type
+    )
+    image_url = f"http://{minio_config.minio_endpoint}/{bucket_name}/{object_path}"
+
+    # Optional: Update Mongo with image_url
+    await ProductDetail.find_one(ProductDetail.barcode == barcode).update({"$set": {"image_url": image_url}})
+
+    return {
+        "status": "success",
+        "message": "Full product created",
+        "mysql_id": product.product_id,
+        "mongo_id": str(detail.id),
+        "image_url": image_url
+    }
+
+
+
+@router.post("/get_product_detail/", response_model=ProductDetailOut, status_code=status.HTTP_200_OK)
+async def read_product_detail(barcode: BarcodeIn = Body(...)):
+    detail = await get_product_detail(barcode.barcode)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Product detail not found")
+    return detail
+
+
 @router.get("/info_products/", response_model=list[ProductOut], status_code=status.HTTP_200_OK)
 async def get_all_products(
     request: Request,
     session: AsyncSession = Depends(get_db)):
     return await crud_product.get_products(session)
+
 @router.get("/test_static/", status_code=status.HTTP_200_OK)
 async def test_static_response():
     return JSONResponse(
@@ -119,17 +162,13 @@ async def test_static_response():
             "message": "This is a static response",
         }
     )
-@router.post("/product_detail", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
-async def product_detail(data: ProductDetailIn):
-    detail = await create_product_detail(data)
-    return {"status": "success", "message": "Product detail created", "id": str(detail.id)}
+# @router.post("/product_detail", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
+# async def product_detail(data: ProductDetailIn):
+#     detail = await create_product_detail(data)
+#     return {"status": "success", "message": "Product detail created", "id": str(detail.id)}
 
-@router.get("/{product_id}")
-async def read_product_detail(product_id: int):
-    detail = await get_product_detail(product_id)
-    if not detail:
-        raise HTTPException(status_code=404, detail="Product detail not found")
-    return detail
+
+
 # @router.get("/product_image/{barcode}", response_model=JsonOut, status_code=status.HTTP_200_OK)
 # async def get_product_image(
 #     request: Request,
