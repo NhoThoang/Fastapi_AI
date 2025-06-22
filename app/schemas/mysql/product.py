@@ -2,9 +2,10 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
+
 class ProductBase(BaseModel):
     name_product: str
-    barcode:str = Field(..., pattern=r'^\d+$')
+    barcode: str = Field(..., pattern=r'^\d+$')
     quantity: int
     import_price: int
     sell_price: int
@@ -13,7 +14,7 @@ class ProductBase(BaseModel):
     type_product: str
 class Image_hash(BaseModel):
     username: str
-    barcode:str = Field(..., pattern=r'^\d+$')
+    barcode:str 
     image_hash: str
     image_url: str
 class OutputImage_hash(Image_hash):

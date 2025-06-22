@@ -18,7 +18,7 @@ from app.schemas.mongo.detail_product import *
 from app.models.mongo.product_detail import ProductDetail
 import json
 from app.crud.verify_user import get_current_username
-from app.crud.mysql.product import insert_image_url_image_hash, Image_hash
+from app.crud.mysql.product import insert_image_url_image_hash, Image_hash, get_product_by_barcode
 
 router = APIRouter()
 
@@ -39,6 +39,7 @@ async def create_product(
 async def create_product(
     product_json: ProductDetailIn = Body(...),
     username: str = Depends(get_current_username)):
+
     mongo_detail = await create_product_detail(product_json)
 
     return {
@@ -72,6 +73,20 @@ async def create_product(
 
 
 
+
+
+####################
+
+@router.post("mysql/get_product_detail/", status_code=status.HTTP_200_OK)
+async def read_product_detail(
+    barcode: BarcodeIn = Body(...),
+    session: AsyncSession = Depends(get_db),
+    ):
+    detail  = get_product_by_barcode(session, barcode.barcode)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Product detail not found")
+    return detail
+
 @router.post("/product_detail", response_model=ProductMessageOut, status_code=status.HTTP_200_OK)
 async def product_detail(data: ProductDetailIn = Body(...)):
     detail = await create_product_detail(data)
@@ -91,6 +106,7 @@ async def delete_image(image_url: str):
 
     await run_in_threadpool(delete_image_from_minio, bucket_name, object_path)
     return {"detail": "Image deleted successfully"}
+
 
 
 

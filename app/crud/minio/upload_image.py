@@ -55,8 +55,8 @@ async def stream_and_hash(file: UploadFile) -> tuple[str, SpooledTemporaryFile]:
 
 async def upload_images_to_minio(
     session: AsyncSession,
-    barcode: Field(..., pattern=r'^\d+$'),
     username: str,
+    barcode: str,
     images: List[UploadFile]
 ) -> Tuple[int, int]:
     
@@ -98,6 +98,7 @@ async def upload_images_to_minio(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
         # image_url = f"https://{minio_config.minio_ip_address}:8080/images/{object_path}"
+        image_url = f"http://{minio_config.minio_ip_address}:9000/{bucket_name}/{object_path}"
         image_hash_model = Image_hash(
             username=username,
             barcode=barcode,
