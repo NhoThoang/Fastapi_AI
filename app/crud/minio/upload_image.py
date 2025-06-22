@@ -20,7 +20,7 @@ from fastapi import UploadFile, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from uuid import uuid4
 from app.schemas.mysql.product import OutputImage_hash
-from app.crud.mysql.product import check_image_hash_exists, check_image_hash_and_username_exists
+from app.crud.mysql.product import check_image_hash_exists, check_image_hash_and_username_exists, check_barcode_exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Tuple
 from app.crud.mysql.product import insert_image_url_image_hash
@@ -65,9 +65,11 @@ async def upload_images_to_minio(
     already_exists = 0
     if not minio_client.bucket_exists(bucket_name):
         minio_client.make_bucket(bucket_name)
-
+    if not await check_barcode_exists(session=session, barcode=barcode):
+        raise HTTPException(status_code=404, detail="Product not found please insert product first")
     for image in images:
         image_hash, temp_file = await stream_and_hash(image)
+
         image_hash_mysql = await check_image_hash_exists(session=session, image_hash=image_hash)
         if image_hash_mysql:
             already_exists += 1

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.schemas.mysql.product import  ProductOut, ProductBase
+from app.schemas.mysql.product import  ProductOut, ProductBase,  ProductWithImage
 from app.schemas.mysql.account import JsonOut
 from app.crud.mysql import product as crud_product
 from app.db.mysql.session import get_db
@@ -56,7 +56,7 @@ async def create_product(
     username: str = Depends(get_current_username)
 ):
     try:
-        new_uploaded, already_exists = await upload_images_to_minio(session, barcode, username, images)
+        new_uploaded, already_exists = await upload_images_to_minio(session=session, username=username, barcode=barcode, images=images)
         return {
             "success": True,
             "message": "Upload image(s) completed",
@@ -77,15 +77,25 @@ async def create_product(
 
 ####################
 
-@router.post("mysql/get_product_detail/", status_code=status.HTTP_200_OK)
+@router.post("/mysql/get_product_detail/", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
 async def read_product_detail(
     barcode: BarcodeIn = Body(...),
     session: AsyncSession = Depends(get_db),
     ):
-    detail  = get_product_by_barcode(session, barcode.barcode)
-    if not detail:
+    detail_mysql  = await get_product_by_barcode(session, barcode.barcode)
+    detail_mongo = await get_product_detail(barcode.barcode)
+    if not detail_mysql or not detail_mongo:
         raise HTTPException(status_code=404, detail="Product detail not found")
-    return detail
+
+    # Merge 2 dict lại để tạo ProductDetailOut
+    merged_data = {
+        **detail_mysql.dict(),
+        **detail_mongo.dict()
+    }
+
+    return ProductDetailOut(**merged_data)
+
+
 
 @router.post("/product_detail", response_model=ProductMessageOut, status_code=status.HTTP_200_OK)
 async def product_detail(data: ProductDetailIn = Body(...)):

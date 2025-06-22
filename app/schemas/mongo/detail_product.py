@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from .product_common import DescriptionBlock, SEO
 from app.schemas.mysql.product import ProductBase
+from app.schemas.mysql.product import ProductWithImage
 
 class ProductDetailIn(BaseModel):
     barcode: str = Field(..., pattern=r'^\d+$')
@@ -11,7 +12,10 @@ class ProductDetailIn(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_deleted: bool = Field(default=False)
 
-ProductDetailOut = ProductDetailIn
+class ProductDetailOut(ProductWithImage):
+    description_blocks: List[DescriptionBlock]
+    seo: SEO
+
 class ProductMessageOut(BaseModel):
     status: str
     message: str

@@ -25,6 +25,14 @@ class ProductOut(ProductBase):
     input_date: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class ProductWithImage(BaseModel):
+    name_product: str
+    barcode: str
+    quantity: int
+    sell_price: int
+    discount: int
+    image_url: list[str]   
+
     # class Config:
     #     from_attributes = True
         # model_config = ConfigDict(from_attributes=True)
