@@ -25,8 +25,20 @@ async def insert_image_url_image_hash(session: AsyncSession, image_hash: Image_h
     return new_image
 async def check_image_hash_exists(session: AsyncSession, image_hash: str)-> Product_images:
     result = await session.execute(select(Product_images).where(Product_images.image_hash == image_hash))
-    return result.scalar_one_or_none()
-    
+    return result.scalars().first()
+# async def check_image_hash_exists(session: AsyncSession, barcode: str)-> Product_images:
+#     result = await session.execute(select(Product_images).where(Product_images.barcode == barcode))
+#     return result.scalars().first()
+
+async def check_image_hash_and_username_exists(session: AsyncSession, username: str, barcode: str, image_hash: str) -> Product_images | None:
+    result = await session.execute(
+        select(Product_images).where(
+            Product_images.username == username,
+            Product_images.barcode == barcode,
+            Product_images.image_hash == image_hash
+        )
+    )
+    return result.scalars().first()   
 async def get_products(session: AsyncSession):
     result = await session.execute(select(Products))
     return result.scalars().all()

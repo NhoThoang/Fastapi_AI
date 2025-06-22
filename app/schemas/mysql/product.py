@@ -12,7 +12,8 @@ class ProductBase(BaseModel):
     expiry_date: datetime
     type_product: str
 class Image_hash(BaseModel):
-    barcode: str
+    username: str
+    barcode:str = Field(..., pattern=r'^\d+$')
     image_hash: str
     image_url: str
 class OutputImage_hash(Image_hash):

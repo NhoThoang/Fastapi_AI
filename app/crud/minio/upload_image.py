@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.core.minio_client import minio_client
 from uuid import uuid4
 import io
+from pydantic import BaseModel, Field
 from app.core.security import decode_access_token
 from app.core.config import minio_config
 from fastapi import APIRouter, HTTPException
@@ -19,8 +20,12 @@ from fastapi import UploadFile, HTTPException
 from fastapi.concurrency import run_in_threadpool
 from uuid import uuid4
 from app.schemas.mysql.product import OutputImage_hash
-from app.crud.mysql.product import check_image_hash_exists
+from app.crud.mysql.product import check_image_hash_exists, check_image_hash_and_username_exists
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Tuple
+from app.crud.mysql.product import insert_image_url_image_hash
+from app.schemas.mysql.product import Image_hash
+
 
 
 # from app.crud.mongo.detail_product import *
@@ -47,38 +52,61 @@ async def stream_and_hash(file: UploadFile) -> tuple[str, SpooledTemporaryFile]:
     temp_file.seek(0)
     return hash_md5.hexdigest(), temp_file
 
-async def upload_image_to_minio(session: AsyncSession, barcode: str, username: str, image: UploadFile) -> tuple[str, str]:
+
+async def upload_images_to_minio(
+    session: AsyncSession,
+    barcode: Field(..., pattern=r'^\d+$'),
+    username: str,
+    images: List[UploadFile]
+) -> Tuple[int, int]:
+    
     bucket_name = "product-images"
-    image_hash, temp_file = await stream_and_hash(image)
-    # check in db have hash in db if exist return image_url
-    image_hash_mysql = await check_image_hash_exists(session=session, image_hash=image_hash)
-    if image_hash_mysql:
-        return image_hash_mysql.image_url, image_hash_mysql.image_hash
+    new_uploads = 0
+    already_exists = 0
     if not minio_client.bucket_exists(bucket_name):
         minio_client.make_bucket(bucket_name)
-    extension = image.filename.split(".")[-1]
-    image_filename = f"{barcode}_{uuid4().hex}.{extension}"
-    object_path = f"{username}/{image_filename}"
 
-    temp_file.seek(0, 2)
-    file_size = temp_file.tell()
-    temp_file.seek(0)
-    # 6. Upload lên MinIO
-    try:
-        await run_in_threadpool(
-            minio_client.put_object,
-            bucket_name,
-            object_path,
-            temp_file,
-            file_size,
-            image.content_type
+    for image in images:
+        image_hash, temp_file = await stream_and_hash(image)
+        image_hash_mysql = await check_image_hash_exists(session=session, image_hash=image_hash)
+        if image_hash_mysql:
+            already_exists += 1
+            if not await check_image_hash_and_username_exists(session=session,username=username,barcode=barcode, image_hash=image_hash):
+                image_hash_model = Image_hash(
+                    username=username,
+                    barcode=barcode,
+                    image_hash=image_hash_mysql.image_hash,
+                    image_url=image_hash_mysql.image_url
+                )
+                await insert_image_url_image_hash(session, image_hash_model)
+            continue
+        extension = image.filename.split(".")[-1]
+        image_filename = f"{barcode}_{uuid4().hex}.{extension}"
+        object_path = f"{username}/{image_filename}"
+        temp_file.seek(0, 2)
+        file_size = temp_file.tell()
+        temp_file.seek(0)
+        try:
+            await run_in_threadpool(
+                minio_client.put_object,
+                bucket_name,
+                object_path,
+                temp_file,
+                file_size,
+                image.content_type
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        # image_url = f"https://{minio_config.minio_ip_address}:8080/images/{object_path}"
+        image_hash_model = Image_hash(
+            username=username,
+            barcode=barcode,
+            image_hash=image_hash,
+            image_url=image_url
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-    image_url = f"https://{minio_config.minio_ip_address}:8080/images/{object_path}"
-    # image_url = f"http://{minio_config.minio_ip_address}:9000/{bucket_name}/{object_path}"
-    return image_url, image_hash
-
+        await insert_image_url_image_hash(session, image_hash_model)
+        new_uploads += 1
+    return new_uploads, already_exists
 
 
 def get_object_path_from_url(url: str, bucket_name: str) -> str:

@@ -16,6 +16,11 @@ class ProductMessageOut(BaseModel):
     status: str
     message: str
     id: str
+class UploadResponse(BaseModel):
+    success: bool
+    message: str
+    new_uploaded: int
+    already_exists: int
 
 class BarcodeIn(BaseModel):
     barcode: str = Field(..., pattern=r'^\d+$')
