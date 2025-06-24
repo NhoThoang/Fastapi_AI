@@ -2,13 +2,19 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 from typing import Literal, List
 import os
-
-env = os.getenv("ENV", "dev")
-env_file = ".env.production" if env == "production" else ".env.dev"
+from dotenv import load_dotenv
+# edit evn here 
+# env = os.getenv("ENV", "dev")
+# env_file = ".env.production" if env == "production" else ".env.dev"
+# print(f"Using environment file: {env_file}")
+ENV_FILE = ".env.production" if os.getenv("ENV", "dev") == "production" else ".env.dev"
+print(f"Using environment file: {ENV_FILE}")
+# load_dotenv(dotenv_path=ENV_FILE, override=True)
 class SettingsBase(BaseSettings):
     class Config:
         # env_file = ".env"
-        env_file = env_file
+        # env_file = ".env"
+        env_file = ENV_FILE
         extra = "ignore"
         # extra = "allow"
 class ConfigDB(SettingsBase):

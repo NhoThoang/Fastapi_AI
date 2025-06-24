@@ -8,8 +8,9 @@ def setup_middlewares(app: FastAPI):
         if config_app.environment == "production":
             allowed_origins = ["https://yourdomain.com"]
         else:
-            allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+            allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "http://127.0.0.1:5173"]
     else:
+        print("CORS origins from config:", config_app.cors_origins)
         allowed_origins = config_app.cors_origins
 
     app.add_middleware(

@@ -6,14 +6,6 @@ from app.core.middlewares import setup_middlewares
 from app.core.config import config_app
 # import logging
 
-# logging.getLogger("uvicorn.access").disabled = True
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:5173"],  # Frontend
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
 
 app = FastAPI(title="My FastAPI App", debug=config_app.debug)
 setup_middlewares(app)
