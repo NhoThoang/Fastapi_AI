@@ -1,10 +1,14 @@
 from pydantic_settings import BaseSettings
 from pydantic import Field
-from typing import Literal
+from typing import Literal, List
+import os
 
+env = os.getenv("ENV", "dev")
+env_file = ".env.production" if env == "production" else ".env.dev"
 class SettingsBase(BaseSettings):
     class Config:
-        env_file = ".env"
+        # env_file = ".env"
+        env_file = env_file
         extra = "ignore"
         # extra = "allow"
 class ConfigDB(SettingsBase):
@@ -31,8 +35,11 @@ class MongoSettings(SettingsBase):
     journal: bool = Field(True, env="MONGO_JOURNAL")
     tz_aware: bool = Field(True, env="MONGO_TZ_AWARE")
 
+class ConfigApp(SettingsBase):
+    cors_origins: List[str] = Field(default=["*"], env="CORS_ORIGINS")
+    debug: bool = Field(default=False, env="DEBUG")
+    environment: Literal["development", "production"] = Field(default="development", env="ENV")
 # Khởi tạo 1 biến toàn cục
-
 class AppConfig(SettingsBase):
     access_secret_key: str = Field("your-default-secret-key", env="SECRET_KEY")
     refresh_secret_key: str = Field("your-default-refresh-secret-key", env="REFRESH_SECRET_KEY")
@@ -61,6 +68,7 @@ class ConfigRedis(SettingsBase):
 config_db = ConfigDB()
 mongo_settings = MongoSettings()
 app_config = AppConfig()
+config_app = ConfigApp()
 minio_config = ConfigMinio()
 redis_config = ConfigRedis()
 

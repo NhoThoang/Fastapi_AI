@@ -77,10 +77,10 @@ async def create_product(
 
 ####################
 
-@router.post("/mysql/get_product_detail/", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
+@router.get("/mysql/get_product_detail/", response_model= ProductDetailOut, status_code=status.HTTP_200_OK)
 async def read_product_detail(
     barcode: BarcodeIn = Body(...),
-    session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db), 
     ):
     detail_mysql  = await get_product_by_barcode(session, barcode.barcode)
     detail_mongo = await get_product_detail(barcode.barcode)

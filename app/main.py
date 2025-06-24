@@ -2,12 +2,21 @@ from fastapi import FastAPI
 # from app.api.v1 import routes_user, routes_product
 from app.api.v1 import routes_product, routes_create_account, routes_login
 from app.db.mongo.session_mongo import init_db
+from app.core.middlewares import setup_middlewares
+from app.core.config import config_app
 # import logging
 
 # logging.getLogger("uvicorn.access").disabled = True
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:5173"],  # Frontend
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
-
-app = FastAPI(title="My FastAPI App")
+app = FastAPI(title="My FastAPI App", debug=config_app.debug)
+setup_middlewares(app)
 app.include_router(routes_login.router, prefix="/api/v1", tags=["Login"])
 app.include_router(routes_create_account.router, prefix="/api/v1", tags=["Create Account"])
 app.include_router(routes_product.router, prefix="/api/v1", tags=["Product"])
