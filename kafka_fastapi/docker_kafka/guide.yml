@@ -1,0 +1,52 @@
+uuidgen 
+
+
+{
+  "query": "Tại sao trái đất quay?",
+  "top_k": 2
+}
+{
+  "query": "Tại sao trái đất quay quanh mặt trời?",
+  "top_k": 2
+}
+{
+  "query": "Tại sao trái đất có mùa?",
+  "top_k": 2
+}
+{
+  "query": "Tại sao trái đất có nước?",
+  "top_k": 2
+}
+
+	
+Response body
+Download
+[
+  {
+    "score": 0.81460667,
+    "payload": {
+      "text": "Trái đất quay quanh mặt trời.",
+      "source": "sách lý lớp 6",
+      "page": 15
+    }
+  },
+  {
+    "score": 0.5475226,
+    "payload": {
+      "text": "Vì nó nhẹ, nhanh, miễn phí, độ chính xác tốt, phù hợp cho cả dev và sản phẩm thật",
+      "source": "sách lý lớp 6",
+      "page": 15
+    }
+  }
+]
+
+
+
+{
+  "text": "Trái đất quay quanh mặt trời.",
+  "metadata": {
+    "source": "sách lý lớp 6",
+    "page": 15
+  }
+}
+
