@@ -111,6 +111,7 @@ sudo mv mc /usr/local/bin/
 #set permission package to executable
 # Kết nối tới MinIO
 mc alias set local http://192.168.5.11:9000 minioadmin minioadmin
+mc alias set local http://localhost:9000 admin admin123
 
 # Cho phép public download
 mc anonymous set download local/product-images
