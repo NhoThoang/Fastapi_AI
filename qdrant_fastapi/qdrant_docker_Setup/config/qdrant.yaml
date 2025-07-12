@@ -1,0 +1,21 @@
+# qdrant.yaml
+service:
+  host: 0.0.0.0
+  http_port: 6333
+  grpc_port: 6334
+
+storage:
+  storage_path: "/qdrant/storage"
+  snapshots_path: "/qdrant/storage/snapshots"
+  wal:
+    wal_capacity_mb: 512   # Tăng WAL size nếu ghi nhiều
+  performance:
+    max_search_threads: 8    # Tăng số luồng xử lý truy vấn (phù hợp CPU nhiều core)
+    max_segment_size: 100000  # Vector/segment, tối ưu để query nhanh hơn
+    indexing_threshold: 20000 # Giảm thời gian index sau khi insert nhiều vector
+
+cache:
+  warming_up: true           # Tự preload index vào RAM lúc khởi động
+  max_indexing_ram: 4096     # MB RAM dành cho việc index (có thể tùy chỉnh theo máy)
+
+log_level: WARN         # Có thể đổi sang WARN/DEBUG/INFO nếu cần

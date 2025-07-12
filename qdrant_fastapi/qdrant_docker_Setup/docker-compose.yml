@@ -1,0 +1,25 @@
+services:
+  qdrant:
+    env_file:
+      - .env
+    image: ${QDRANT_IMAGE}
+    container_name: ${QDRANT_CONTAINER}
+    ports:
+      - "${QDRANT_PORT_HTTP}:${QDRANT_PORT_HTTP}"
+      - "${QDRANT_PORT_GRPC}:${QDRANT_PORT_GRPC}"
+    volumes:
+      - ${QDRANT_VOLUME}:/qdrant/storage
+      - ./config/qdrant.yaml:/qdrant/config/production.yaml   # <--- mount file config
+    restart: unless-stopped
+
+volumes:
+  qdrant_data:
+
+
+
+
+    # driver: local
+    # driver_opts:
+    #   type: none
+    #   device: ${QDRANT_VOLUME}
+    #   o: bind
